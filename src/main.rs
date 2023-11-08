@@ -1,12 +1,16 @@
 use std::env;
 use std::process::Command;
-use std::collections::HashMap;
 use regex::Regex;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Usage: {} <command>", args[0]);
+    if args.len() < 3 {
+        eprintln!("Usage: {} -i <path-to-binary>", args[0]);
+        std::process::exit(1);
+    }
+
+    if args[1] != "-i" {
+        eprintln!("Unknown option: {}", args[1]);
         std::process::exit(1);
     }
 
@@ -21,18 +25,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let output = Command::new("objdump")
         .arg("-d")
-        .arg(&args[1])
+        .arg(&args[2])
         .output()?;
 
     if !output.status.success() {
         let error_str = String::from_utf8_lossy(&output.stderr);
         eprintln!("objdump failed: {}", error_str);
+        std::process::exit(1);
     }
 
     let output_str = String::from_utf8_lossy(&output.stdout);
 
-    println!("objdump output:\n{}", output_str);
-    analyze_objdump(&output_str)?;
+    if args.contains(&"-i".to_string()) {
+        analyze_objdump(&output_str)?;
+    }
 
     Ok(())
 }
